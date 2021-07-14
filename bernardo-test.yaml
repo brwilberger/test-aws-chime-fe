@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: "AWS::Serverless-2016-10-31"
+Description: AWS CloudFormation stack to set up infrastructure required for the Amazon Chime SDK chat demo app
+Parameters:
+  DemoName:
+    Type: String
+    Default: ChimeSDKMessagingDemo
+    Description: Unique Name for Demo Resources
+Resources:
+  AuthLambdaAnonUserRole:
+    Description: The Role the lambda parameterizes and returns to the user when Anonymous, same as above except no s3 permissions
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !GetAtt AuthLambdaIAMRole.Arn
+            Action:
+              - "sts:AssumeRole"
+              - "sts:TagSession"
+      Policies:
+        - PolicyName: !Sub ${DemoName}-CognitoAuthorizedPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "mobileanalytics:PutEvents"
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"
+        - PolicyName: !Sub ${DemoName}-ChimeSDKDemoUserPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "chime:GetMessagingSessionEndpoint"
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - "chime:SendChannelMessage"
+                  - "chime:GetChannelMessage"
+                  - "chime:ListChannelMessages"
+                  - "chime:CreateChannelMembership"
+                  - "chime:ListChannelMemberships"
+                  - "chime:DeleteChannelMembership"
+                  - "chime:CreateChannelModerator"
+                  - "chime:ListChannelModerators"
+                  - "chime:DescribeChannelModerator"
+                  - "chime:CreateChannel"
+                  - "chime:DescribeChannel"
+                  - "chime:ListChannels"
+                  - "chime:UpdateChannel"
+                  - "chime:DeleteChannel"
+                  - "chime:RedactChannelMessage"
+                  - "chime:UpdateChannelMessage"
+                  - "chime:Connect"
+                  - "chime:ListChannelMembershipsForAppInstanceUser"
+                  - "chime:CreateChannelBan"
+                  - "chime:ListChannelBans"
+                  - "chime:DeleteChannelBan"
+                Resource:
+                  - !Join ['', [!GetAtt TriggerChimeAppInstanceLambda.AppInstanceArn, '/user/${aws:PrincipalTag/UserUUID}']]
+                  - !Join ['', [!GetAtt TriggerChimeAppInstanceLambda.AppInstanceArn, '/channel/*']]
+                  - !GetAtt TriggerChimeAppInstanceLambda.AppInstanceArn
+              - Effect: "Allow"
+                Action:
+                  - "chime:ListAppInstanceUsers"
+                  - "chime:DescribeAppInstanceUser"
+                Resource:
+                  - !Join ['', [!GetAtt TriggerChimeAppInstanceLambda.AppInstanceArn, '/user/*']]
